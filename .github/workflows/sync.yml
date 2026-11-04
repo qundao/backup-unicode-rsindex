@@ -1,0 +1,114 @@
+name: Sync RSIndex
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ vars.VERSION }}
+  cancel-in-progress: true
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # USER: ${{ github.repository_owner }}
+      VERSION: ${{ vars.VERSION }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download Data
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          name=RSIndex
+          suffixes=(pdf txt)
+          version="$VERSION"
+          SAVE_DIR="$VERSION"
+
+          URL="https://www.unicode.org/Public/${version}/charts/"
+
+          download() {
+            local url="$1"
+            local target="$2"
+            local http_code
+            local curl_exit=0
+
+            echo "Downloading: $target"
+
+            # 不使用 -f，让我们能够单独判断 HTTP 状态码
+            http_code=$(curl -sSL \
+              --connect-timeout 15 \
+              --max-time 120 \
+              -o "$target" \
+              -w '%{http_code}' \
+              "$url") || curl_exit=$?
+
+            # 网络错误、超时、传输中断等
+            if (( curl_exit != 0 )); then
+              rm -f "$target"
+              echo "ERROR: Download failed (curl exit code: $curl_exit): $url" >&2
+              return "$curl_exit"
+            fi
+
+            case "$http_code" in
+              200)
+                echo "Downloaded: $target"
+                ;;
+              404)
+                rm -f "$target"
+                echo "Not found (404), skip: $url"
+                ;;
+              *)
+                rm -f "$target"
+                echo "ERROR: HTTP $http_code: $url" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          echo "download version = $version"
+          downloaded_count=0
+          for suffix in "${suffixes[@]}"; do
+            file="${name}.${suffix}"
+            TARGET="$SAVE_DIR/$file"
+
+            if [[ -f "$TARGET" ]]; then
+              echo "Skip existing: $TARGET"
+              continue
+            fi
+
+            mkdir -p "$(dirname "$TARGET")"
+            if download "${URL}${file}" "$TARGET"; then
+                ((downloaded_count += 1))
+            fi
+          done
+
+          if (( downloaded_count > 0 )); then
+            file="Readme.txt"
+            if [[ -f $file ]]; then
+              echo "Remove $file"
+              rm -f "$file"
+            fi
+            download "${URL}${file}" "$file"
+          else
+              echo "No files downloaded successfully. Skip Readme.txt"
+          fi
+
+      - name: Git auto commit
+        uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
+          commit_author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+          commit_message: "Add RSIndex ${{ env.VERSION }}"
