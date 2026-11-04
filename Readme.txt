@@ -1,13 +1,13 @@
 # Unicode Code Charts
-# Date: 2025-08-11
-# © 2025 Unicode®, Inc.
+# Date: 2026-09-06
+# © 2026 Unicode®, Inc.
 # Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the U.S. and other countries.
 # For terms of use and license, see https://www.unicode.org/terms_of_use.html
 
-The Unicode Standard, Version 17.0 - Code Charts
+The Unicode Standard, Version 18.0 - Code Charts
 
 The file "CodeCharts.pdf" contains all of the final code charts for
-Unicode 17.0. Warning: this file is over 100 megabytes.
+Unicode 18.0. Warning: this file is over 100 megabytes.
 The charts in CodeCharts.pdf do not highlight the new characters.
 
 Fonts
