@@ -1,0 +1,11 @@
+# macos
+.DS_Store
+
+# linux
+*~
+
+# ide
+temp/
+dist/
+*.gz
+*.zip
